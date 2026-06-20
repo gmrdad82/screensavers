@@ -1,0 +1,9 @@
+# Transient working dir — keep only the committed design docs.
+tmp/*
+!tmp/docs/
+
+# Editor / OS cruft
+*.bak
+*.swp
+*~
+.DS_Store
