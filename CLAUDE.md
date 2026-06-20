@@ -23,7 +23,9 @@ bin/record-gifs# regenerate the gallery GIFs (needs vhs) → assets/
 art/NN-*.txt   # the ASCII arts (plain glyphs; tte supplies the color)
 assets/*.gif   # animated previews of the hero variants (for the README)
 variants.conf  # art|effect|extra_tte_args|label  (one line per variant)
-install.sh     # patch hypridle on-timeout → bin/launch (idempotent, backs up .bak)
+shim/          # one symlink (omarchy-launch-screensaver → bin/launch) prepended
+               #   to the session PATH so the Omarchy menu/keybinds use ours too
+install.sh     # wire idle (hypridle) + menu/keybinds (PATH shim); idempotent
 uninstall.sh   # restore omarchy-launch-screensaver
 ```
 

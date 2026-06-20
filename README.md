@@ -44,14 +44,25 @@ for the real screensaver, Omarchy/Hyprland (`hyprctl`, `jq`).
 ## Install / uninstall
 
 ```bash
-./install.sh             # point hypridle's on-timeout at bin/launch (backs up .bak)
+./install.sh             # hook idle (hypridle) + menu/keybinds (PATH shim)
 ./uninstall.sh           # restore the Omarchy default
 ./bin/check              # sanity check (scripts + variants)
 ```
 
-`install.sh` only rewrites the single `on-timeout` line in
-`~/.config/hypr/hypridle.conf`. If a future Omarchy update ever rewrites that
-file, just re-run `./install.sh`.
+`install.sh` wires up **both** ways Omarchy starts a screensaver, touching only
+your user config (nothing inside `~/.local/share/omarchy`, so `omarchy update` is
+never affected):
+
+- **Idle** — rewrites the `on-timeout` line in `~/.config/hypr/hypridle.conf`
+  (backs it up to `.bak`). Effective immediately.
+- **Omarchy menu + keybinds** — these call the bare `omarchy-launch-screensaver`,
+  so `install.sh` prepends a one-symlink shim dir (`shim/`) to the session `PATH`
+  in `~/.config/uwsm/env`, shadowing just that command. **Takes effect after you
+  log out and back in** (PATH changes need a fresh session).
+
+Test the full screensaver right now (exactly what the menu runs):
+`./bin/launch force`. If a future Omarchy update rewrites those config files,
+re-run `./install.sh`.
 
 ## All 17 variants
 
