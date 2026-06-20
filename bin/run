@@ -21,6 +21,8 @@ pick_index() {
   echo $(( RANDOM % COUNT ))
 }
 
+dbg() { [[ ${SCREENSAVER_DEBUG:-} == 1 ]] && printf '%s [%s] %s\n' "$(date +%T)" "$$" "$*" >>/tmp/ss-run.log; }
+
 screensaver_in_focus() {
   hyprctl activewindow -j 2>/dev/null | jq -e '.class == "org.omarchy.screensaver"' >/dev/null 2>&1
 }
@@ -54,13 +56,21 @@ while true; do
     --anchor-canvas c --anchor-text c --no-eol --no-restore-cursor \
     "$effect" $extra &
   tte_pid=$!
+  launched_at=$SECONDS
+  dbg "started tte_pid=$tte_pid art=$art effect=$effect managed=${SCREENSAVER_MANAGED:-}"
 
   while kill -0 "$tte_pid" 2>/dev/null; do
-    if read -rn1 -t 1; then
+    if read -rn1 -t 1 key; then
+      dbg "input received key=[$key] -> exit"
       exit_screensaver
     fi
-    if [[ ${SCREENSAVER_MANAGED:-} == 1 ]] && ! screensaver_in_focus; then
+    # Grace period: give the window time to grab focus before the focus-loss
+    # exit can fire, otherwise a freshly-spawned screensaver quits instantly.
+    if [[ ${SCREENSAVER_MANAGED:-} == 1 ]] && (( SECONDS - launched_at >= 3 )) \
+      && ! screensaver_in_focus; then
+      dbg "focus lost -> exit (active=$(hyprctl activewindow -j 2>/dev/null | jq -r '.class // "none"' 2>/dev/null))"
       exit_screensaver
     fi
   done
+  dbg "tte exited on its own (pid $tte_pid gone)"
 done

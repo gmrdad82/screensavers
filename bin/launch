@@ -28,16 +28,19 @@ command -v walker &>/dev/null && walker -q 2>/dev/null
 focused=$(omarchy-hyprland-monitor-focused 2>/dev/null || echo)
 terminal=$(xdg-terminal-exec --print-id 2>/dev/null || echo)
 
+# NOTE: hyprctl exits 0 even on "Invalid dispatcher", so we can't use the exit
+# code to fall back. Check the output for "ok" instead. The hl.dsp.* forms are
+# newer (Omarchy/newer Hyprland); the classic forms are the portable fallback.
 hypr_focus_monitor() {
-  hyprctl dispatch "hl.dsp.focus({ monitor = \"$1\" })" >/dev/null 2>&1 \
+  [[ "$(hyprctl dispatch "hl.dsp.focus({ monitor = \"$1\" })" 2>/dev/null)" == ok ]] \
     || hyprctl dispatch focusmonitor "$1" >/dev/null 2>&1
 }
 hypr_exec() {
-  hyprctl dispatch "hl.dsp.exec_cmd([[$1]])" >/dev/null 2>&1 \
-    || hyprctl dispatch exec -- bash -lc "$1" >/dev/null 2>&1
+  [[ "$(hyprctl dispatch "hl.dsp.exec_cmd([[$1]])" 2>/dev/null)" == ok ]] \
+    || hyprctl dispatch exec "$1" >/dev/null 2>&1
 }
 
-run_cmd="env SCREENSAVER_MANAGED=1 $RUN"
+run_cmd="env SCREENSAVER_MANAGED=1 ${SCREENSAVER_DEBUG:+SCREENSAVER_DEBUG=1} $RUN"
 
 # shellcheck disable=SC2046  # intentional word-split over monitor names
 for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
