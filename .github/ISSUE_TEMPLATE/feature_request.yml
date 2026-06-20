@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest a new variant, effect, or capability
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas welcome. This is a personal project shared as-is — suggestions are
+        considered when there's time, no roadmap commitments.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind?
+      options:
+        - "New variant (art + effect + palette)"
+        - "New ASCII art piece"
+        - "Tooling (preview/install/check)"
+        - "Omarchy integration"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should it do, and why? For a variant, name the art concept, the tte effect, and the palette (keep it single/adjacent-hue — no rainbow).
+      placeholder: |
+        Art: ...
+        Effect: ...
+        Palette: ...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: ack
+    attributes:
+      label: Acknowledgment
+      options:
+        - label: I've searched existing issues to avoid duplicates.
+          required: true

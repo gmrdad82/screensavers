@@ -1,0 +1,15 @@
+# Dependabot — keep the GitHub Actions used by CI up to date. This repo is pure
+# bash + tte (no bundler/npm), so the only ecosystem to watch is github-actions.
+# Minor/patch bumps are grouped into one weekly PR; majors land standalone.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions-all:
+        update-types:
+          - minor
+          - patch

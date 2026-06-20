@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: README — what this is and how to preview/install
+    url: https://github.com/gmrdad82/screensavers#readme
+    about: Read before opening an issue. Covers preview, install, and uninstall.
+  - name: PITO — the project this art comes from
+    url: https://github.com/gmrdad82/pito
+    about: The PITO logo and mark live here.
+  - name: TerminalTextEffects (tte)
+    url: https://github.com/ChrisBuilds/terminaltexteffects
+    about: The engine that animates the art. Effect-specific questions belong upstream.

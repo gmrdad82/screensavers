@@ -1,0 +1,83 @@
+name: Bug report
+description: Report a broken variant, install/hook problem, or rendering glitch
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a report. This is a personal project shared as-is —
+        **no SLA, no support guarantees.** Clear reports get looked at faster.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area?
+      options:
+        - "A specific variant (wrong colors / misaligned art / crash)"
+        - "install.sh / uninstall.sh (hypridle hook)"
+        - "bin/launch (multi-monitor / terminal / window class)"
+        - "bin/run (exit-on-input / cursor / loop)"
+        - "bin/preview or bin/gallery"
+        - "tte rendering / effect flags"
+        - "CI / bin/check"
+        - "Other / unsure"
+    validations:
+      required: true
+
+  - type: input
+    id: variant
+    attributes:
+      label: Variant (if applicable)
+      description: The number/label from variants.conf, e.g. "7 — Core Matrix".
+      placeholder: e.g. 7 — Core Matrix
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw vs. what you expected.
+      placeholder: |
+        I expected ... but ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Shortest deterministic repro.
+      placeholder: |
+        1. `./bin/preview 7`
+        2. ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Omarchy/Hyprland version, terminal (alacritty/ghostty/foot/kitty), tte version.
+      placeholder: e.g. Omarchy, Hyprland 0.4x, ghostty, tte 0.15.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output of ./bin/check
+      description: Paste the full output of `./bin/check`.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: ack
+    attributes:
+      label: Acknowledgment
+      options:
+        - label: I've searched existing issues to avoid duplicates.
+          required: true
