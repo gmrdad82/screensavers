@@ -19,7 +19,9 @@ bin/launch     # spawns bin/run fullscreen per-monitor (org.omarchy.screensaver 
 bin/preview    # render ONE variant in the current terminal — no system change
 bin/gallery    # cycle ALL variants in the current terminal — no system change
 bin/check      # sanity: bash -n + shellcheck + validate variants.conf
+bin/record-gifs# regenerate the gallery GIFs (needs vhs) → assets/
 art/NN-*.txt   # the ASCII arts (plain glyphs; tte supplies the color)
+assets/*.gif   # animated previews of the hero variants (for the README)
 variants.conf  # art|effect|extra_tte_args|label  (one line per variant)
 install.sh     # patch hypridle on-timeout → bin/launch (idempotent, backs up .bak)
 uninstall.sh   # restore omarchy-launch-screensaver

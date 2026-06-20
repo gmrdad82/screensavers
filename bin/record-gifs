@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Record the hero variants to animated GIFs (12 fps) into assets/ using vhs.
+# Requires: vhs (extra/vhs). Re-runnable; overwrites assets/*.gif.
+#   GIF_FONT=<family>  override the font (default: JetBrainsMono Nerd Font)
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_DIR" || exit 1
+command -v vhs >/dev/null || { echo "vhs not installed: sudo pacman -S vhs" >&2; exit 1; }
+mkdir -p assets
+
+FONT="${GIF_FONT:-JetBrainsMono Nerd Font}"
+FPS=12        # GIF output frame rate (vhs)
+ANIM_FPS=60   # tte animation speed (high = effect completes in a few seconds)
+WIDTH=720
+HEIGHT=360
+FONTSIZE=22
+HOLD=9
+
+# art-basename:output-slug — the hero gallery (favorites)
+HEROES=(
+  "01-wordmark-shadow.txt:ice-beams"
+  "04-vhs.txt:vhs-tracking"
+  "09-pixel.txt:pixel-pour"
+  "10-glitch.txt:glitch"
+  "15-icon-small.txt:bouncy-logo"
+  "16-synthgrid.txt:synthwave-grid"
+)
+
+for entry in "${HEROES[@]}"; do
+  IFS=: read -r artbase slug <<<"$entry"
+  line=$(grep -F "art/$artbase|" variants.conf) || { echo "no variant for $artbase" >&2; exit 1; }
+  IFS='|' read -r art effect extra _ <<<"$line"
+  cmd="clear; printf '\\033[?25l'; tte -i $art --canvas-width 0 --canvas-height 0 --anchor-canvas c --anchor-text c --no-eol --frame-rate $ANIM_FPS $effect $extra; sleep $HOLD"
+  tape="$(mktemp --suffix=.tape)"
+  {
+    echo "Output assets/$slug.gif"
+    echo "Set Shell bash"
+    echo "Set FontFamily \"$FONT\""
+    echo "Set FontSize $FONTSIZE"
+    echo "Set Width $WIDTH"
+    echo "Set Height $HEIGHT"
+    echo "Set Padding 30"
+    echo "Set Framerate $FPS"
+    echo 'Set Theme { "background": "#000000", "foreground": "#c0caff", "black": "#000000", "red": "#ff5370", "green": "#00ff9c", "yellow": "#ffd700", "blue": "#5170ff", "magenta": "#bb9af7", "cyan": "#7dcfff", "white": "#ffffff", "brightBlack": "#565f89", "brightRed": "#ff5370", "brightGreen": "#00ff9c", "brightYellow": "#ffd700", "brightBlue": "#5170ff", "brightMagenta": "#bb9af7", "brightCyan": "#89ddff", "brightWhite": "#ffffff", "cursor": "#000000", "selection": "#5170ff" }'
+    echo "Hide"
+    echo "Type \"$cmd\""
+    echo "Enter"
+    echo "Sleep 700ms"
+    echo "Show"
+    echo "Sleep ${HOLD}s"
+  } >"$tape"
+  echo "recording $slug ($effect) ..."
+  vhs "$tape"
+  rm -f "$tape"
+done
+
+echo "GIFs written to assets/"
+ls -lh assets/*.gif
