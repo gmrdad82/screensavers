@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Sanity check: scripts parse, shellcheck is clean (if available), and every
+# variant references an existing art file + a real tte effect.
+set -uo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_DIR" || exit 1
+
+fail=0
+ok()  { printf '  ok   %s\n' "$*"; }
+bad() { printf '  FAIL %s\n' "$*" >&2; fail=1; }
+
+echo "[1/4] bash -n (syntax)"
+for s in bin/* install.sh uninstall.sh; do
+  [[ -f $s ]] || continue
+  if bash -n "$s" 2>/dev/null; then ok "$s"; else bad "syntax: $s"; fi
+done
+
+echo "[2/4] shellcheck"
+if command -v shellcheck &>/dev/null; then
+  if shellcheck -x -- bin/* install.sh uninstall.sh; then ok "clean"; else bad "shellcheck issues"; fi
+else
+  echo "  skip (shellcheck not installed; CI runs it)"
+fi
+
+echo "[3/4] tte available"
+if command -v tte &>/dev/null; then ok "$(tte --version 2>/dev/null || echo tte)"; else bad "tte not found"; fi
+
+echo "[4/4] variants.conf"
+n=0
+while IFS='|' read -r art effect _ label; do
+  [[ -z ${art// } || $art == \#* ]] && continue
+  n=$((n + 1))
+  [[ -f $art ]] || bad "variant $n: art not found: $art"
+  if command -v tte &>/dev/null && ! tte "$effect" --help >/dev/null 2>&1; then
+    bad "variant $n: unknown effect: $effect"
+  fi
+  [[ -n ${label// } ]] || bad "variant $n: missing label"
+done <variants.conf
+if [[ $n -gt 0 ]]; then ok "$n variants"; else bad "no variants found"; fi
+
+echo
+[[ $fail -eq 0 ]] && echo "PASS" || echo "FAILED"
+exit $fail
