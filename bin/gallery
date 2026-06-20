@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Cycle ALL variants in the current terminal, a few seconds each.
+# Changes NOTHING on the system. Ctrl-C to stop.
+#   GALLERY_SECONDS=<n>  seconds per variant (default 6)
+set -uo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONF="$REPO_DIR/variants.conf"
+SECS="${GALLERY_SECONDS:-6}"
+
+mapfile -t VARIANTS < <(grep -vE '^[[:space:]]*(#|$)' "$CONF")
+TOTAL=${#VARIANTS[@]}
+
+cleanup() { tput cnorm 2>/dev/null || true; printf '\033[0m'; clear; exit 0; }
+trap cleanup INT TERM
+tput civis 2>/dev/null || true
+
+i=0
+for line in "${VARIANTS[@]}"; do
+  i=$((i + 1))
+  IFS='|' read -r art effect extra label <<<"$line"
+  printf '\033]0;PITO screensaver [%d/%d] %s\007' "$i" "$TOTAL" "$label"
+  printf '\033]11;rgb:00/00/00\007'
+  clear
+  # shellcheck disable=SC2086  # extra is intentionally word-split into tte args
+  timeout "$SECS" tte -i "$REPO_DIR/$art" \
+    --frame-rate 120 --canvas-width 0 --canvas-height 0 --reuse-canvas \
+    --anchor-canvas c --anchor-text c --no-eol --no-restore-cursor \
+    "$effect" $extra || true
+done
+
+cleanup

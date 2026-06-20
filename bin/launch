@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Launch the PITO screensaver on every monitor.
+# Forked from omarchy-launch-screensaver: keeps the org.omarchy.screensaver
+# window class, multi-monitor spawn, and terminal font config — but runs this
+# repo's bin/run (random PITO variant) instead of omarchy-screensaver.
+#
+# Touches NOTHING in ~/.local/share/omarchy (it only reads omarchy's terminal
+# config files), so `omarchy update` can never clobber it.
+set -uo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUN="$REPO_DIR/bin/run"
+OMA="${OMARCHY_PATH:-$HOME/.local/share/omarchy}"
+
+command -v tte &>/dev/null || exit 1
+
+# Already running?
+pgrep -f org.omarchy.screensaver >/dev/null && exit 0
+
+# Respect Omarchy's screensaver on/off toggle, unless forced.
+if command -v omarchy-toggle-enabled &>/dev/null \
+  && omarchy-toggle-enabled screensaver-off && [[ ${1:-} != force ]]; then
+  exit 1
+fi
+
+command -v walker &>/dev/null && walker -q 2>/dev/null
+
+focused=$(omarchy-hyprland-monitor-focused 2>/dev/null || echo)
+terminal=$(xdg-terminal-exec --print-id 2>/dev/null || echo)
+
+hypr_focus_monitor() {
+  hyprctl dispatch "hl.dsp.focus({ monitor = \"$1\" })" >/dev/null 2>&1 \
+    || hyprctl dispatch focusmonitor "$1" >/dev/null 2>&1
+}
+hypr_exec() {
+  hyprctl dispatch "hl.dsp.exec_cmd([[$1]])" >/dev/null 2>&1 \
+    || hyprctl dispatch exec -- bash -lc "$1" >/dev/null 2>&1
+}
+
+run_cmd="env SCREENSAVER_MANAGED=1 $RUN"
+
+# shellcheck disable=SC2046  # intentional word-split over monitor names
+for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
+  hypr_focus_monitor "$m"
+  case $terminal in
+  *Alacritty*)
+    hypr_exec "alacritty --class=org.omarchy.screensaver --config-file $OMA/default/alacritty/screensaver.toml -e $run_cmd" ;;
+  *ghostty*)
+    hypr_exec "ghostty --class=org.omarchy.screensaver --config-file=$OMA/default/ghostty/screensaver --font-size=18 -e $run_cmd" ;;
+  *foot*)
+    hypr_exec "foot --app-id=org.omarchy.screensaver --config=$OMA/default/foot/screensaver.ini -e $run_cmd" ;;
+  *kitty*)
+    hypr_exec "kitty --class=org.omarchy.screensaver --override font_size=18 --override window_padding_width=0 -e $run_cmd" ;;
+  *)
+    notify-send -u low "Screensaver needs Alacritty, Foot, Ghostty, or Kitty" 2>/dev/null ;;
+  esac
+done
+
+[[ -n $focused ]] && hypr_focus_monitor "$focused"

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Preview ONE variant in the current terminal. Changes NOTHING on the system.
+# Usage:  bin/preview <index 0-19>     (or  VARIANT=<n> bin/preview)
+# Press any key or Ctrl-C to exit.
+set -uo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+idx="${1:-${VARIANT:-}}"
+
+if [[ -z $idx ]]; then
+  echo "usage: bin/preview <index 0-19>" >&2
+  grep -vE '^[[:space:]]*(#|$)' "$REPO_DIR/variants.conf" | nl -v0 -w2 -s'  ' \
+    | sed 's/|.*|/  →  /' >&2
+  exit 2
+fi
+
+exec env VARIANT="$idx" "$REPO_DIR/bin/run"

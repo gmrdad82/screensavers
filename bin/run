@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Run the PITO screensaver: pick a variant and animate it with tte.
+# Forked from omarchy-screensaver — keeps the cursor-hide / exit-on-input loop.
+#
+# Env:
+#   VARIANT=<n>           force a specific 0-based variant (else random each cycle)
+#   SCREENSAVER_MANAGED=1 set by bin/launch; enables Hyprland focus-loss exit.
+set -uo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONF="$REPO_DIR/variants.conf"
+
+mapfile -t VARIANTS < <(grep -vE '^[[:space:]]*(#|$)' "$CONF")
+COUNT=${#VARIANTS[@]}
+[[ $COUNT -gt 0 ]] || { echo "no variants in $CONF" >&2; exit 1; }
+
+pick_index() {
+  if [[ -n ${VARIANT:-} ]]; then
+    (( VARIANT >= 0 && VARIANT < COUNT )) && { echo "$VARIANT"; return; }
+  fi
+  echo $(( RANDOM % COUNT ))
+}
+
+screensaver_in_focus() {
+  hyprctl activewindow -j 2>/dev/null | jq -e '.class == "org.omarchy.screensaver"' >/dev/null 2>&1
+}
+
+restore_cursor() {
+  hyprctl eval 'hl.config({ cursor = { invisible = false } })' &>/dev/null \
+    || hyprctl keyword cursor:invisible false &>/dev/null || true
+  tput cnorm 2>/dev/null || true
+}
+
+exit_screensaver() {
+  restore_cursor
+  pkill -x tte 2>/dev/null
+  printf '\033[0m'
+  exit 0
+}
+
+trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
+
+printf '\033]11;rgb:00/00/00\007' # black background
+hyprctl eval 'hl.config({ cursor = { invisible = true } })' &>/dev/null \
+  || hyprctl keyword cursor:invisible true &>/dev/null || true
+tput civis 2>/dev/null || true
+
+while true; do
+  idx=$(pick_index)
+  IFS='|' read -r art effect extra _ <<<"${VARIANTS[$idx]}"
+  # shellcheck disable=SC2086  # extra is intentionally word-split into tte args
+  tte -i "$REPO_DIR/$art" \
+    --frame-rate 120 --canvas-width 0 --canvas-height 0 --reuse-canvas \
+    --anchor-canvas c --anchor-text c --no-eol --no-restore-cursor \
+    "$effect" $extra &
+  tte_pid=$!
+
+  while kill -0 "$tte_pid" 2>/dev/null; do
+    if read -rn1 -t 1; then
+      exit_screensaver
+    fi
+    if [[ ${SCREENSAVER_MANAGED:-} == 1 ]] && ! screensaver_in_focus; then
+      exit_screensaver
+    fi
+  done
+done
