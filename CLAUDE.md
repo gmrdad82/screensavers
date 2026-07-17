@@ -1,6 +1,7 @@
-# Working agreement — PITO Screensavers
+# PITO Screensavers — project guide
 
-Authoritative, self-contained instructions for this repo. Keep it simple.
+The global working agreement (`~/.claude/CLAUDE.md`) applies; below is only
+what's specific to this repo. Keep it simple.
 
 ## What this repo is
 
@@ -63,8 +64,6 @@ from the effect's gradient, not the art** — so always pin a gradient.
 - **Branch `main`.** No new branches or tags unless asked.
 - **License:** AGPL-3.0. Preserve `LICENSE` and `NOTICE`; modified/commercial use
   must credit gmrdad82.
-- **Commits:** plain imperative messages. **Never mention Claude/AI in the
-  author, committer, or message body, and never add a co-author trailer.**
 
 ## Commands
 
