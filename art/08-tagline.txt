@@ -8,4 +8,3 @@
         The best YouTube tool!
 
            https://pitomd.com
-   https://github.com/gmrdad82/pito
