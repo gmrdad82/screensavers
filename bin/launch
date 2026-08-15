@@ -1,23 +1,14 @@
 #!/usr/bin/env bash
-# Launch the PITO screensaver on every monitor.
-# Forked from omarchy-launch-screensaver: keeps the org.omarchy.screensaver
-# window class, multi-monitor spawn, and terminal font config — but runs this
-# repo's bin/run (random PITO variant) instead of omarchy-screensaver.
-#
-# Touches NOTHING in ~/.local/share/omarchy (it only reads omarchy's terminal
-# config files), so `omarchy update` can never clobber it.
 set -uo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN="$REPO_DIR/bin/run"
-OMA="${OMARCHY_PATH:-$HOME/.local/share/omarchy}"
+OMA="${OMARCHY_PATH:-/usr/share/omarchy}"
 
 command -v tte &>/dev/null || exit 1
 
-# Already running?
-pgrep -f org.omarchy.screensaver >/dev/null && exit 0
+pgrep -f '[o]rg.omarchy.screensaver' >/dev/null && exit 0
 
-# Respect Omarchy's screensaver on/off toggle, unless forced.
 if command -v omarchy-toggle-enabled &>/dev/null \
   && omarchy-toggle-enabled screensaver-off && [[ ${1:-} != force ]]; then
   exit 1
@@ -28,21 +19,38 @@ command -v walker &>/dev/null && walker -q 2>/dev/null
 focused=$(omarchy-hyprland-monitor-focused 2>/dev/null || echo)
 terminal=$(xdg-terminal-exec --print-id 2>/dev/null || echo)
 
-# NOTE: hyprctl exits 0 even on "Invalid dispatcher", so we can't use the exit
-# code to fall back. Check the output for "ok" instead. The hl.dsp.* forms are
-# newer (Omarchy/newer Hyprland); the classic forms are the portable fallback.
 hypr_focus_monitor() {
   [[ "$(hyprctl dispatch "hl.dsp.focus({ monitor = \"$1\" })" 2>/dev/null)" == ok ]] \
     || hyprctl dispatch focusmonitor "$1" >/dev/null 2>&1
 }
+
 hypr_exec() {
   [[ "$(hyprctl dispatch "hl.dsp.exec_cmd([[$1]])" 2>/dev/null)" == ok ]] \
     || hyprctl dispatch exec "$1" >/dev/null 2>&1
 }
 
+events=""
+socket="${XDG_RUNTIME_DIR:-/run/user/$UID}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-}/.socket2.sock"
+if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} && -S $socket ]] && command -v socat &>/dev/null; then
+  exec {events}< <(socat -U - "UNIX-CONNECT:$socket")
+fi
+
+wait_for_screensaver_window() {
+  if [[ -z $events ]]; then
+    sleep 0.8
+    return 0
+  fi
+
+  local line deadline=$((SECONDS + 5))
+  while ((SECONDS < deadline)) \
+    && IFS= read -r -t $((deadline - SECONDS)) -u "$events" line; do
+    [[ $line == openwindow\>\>*,org.omarchy.screensaver,* ]] && return 0
+  done
+}
+
 run_cmd="env SCREENSAVER_MANAGED=1 ${SCREENSAVER_DEBUG:+SCREENSAVER_DEBUG=1} $RUN"
 
-# shellcheck disable=SC2046  # intentional word-split over monitor names
+# shellcheck disable=SC2046
 for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
   hypr_focus_monitor "$m"
   case $terminal in
@@ -57,6 +65,7 @@ for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
   *)
     notify-send -u low "Screensaver needs Alacritty, Foot, Ghostty, or Kitty" 2>/dev/null ;;
   esac
+  wait_for_screensaver_window
 done
 
 [[ -n $focused ]] && hypr_focus_monitor "$focused"
